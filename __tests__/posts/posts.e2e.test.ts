@@ -6,6 +6,8 @@ import {CreatePostModel} from "../../src/models/post/input/create.post.input.mod
 import {BlogDataManager} from "../blogs/data-manager/blog.data.manager";
 import {CreateBlogModel} from "../../src/models/blog/input/create.blog.input.models";
 import {UpdatePostModel} from "../../src/models/post/input/update.post.input.models";
+import {uri} from "../../src/db/db";
+import {MongoClient} from "mongodb";
 
 export enum PossibleErrors {
     TITLE = 'title',
@@ -15,19 +17,27 @@ export enum PossibleErrors {
 }
 
 describe('/posts', () => {
-
     let pdm: PostDataManager
     let bdm: BlogDataManager
 
+    const client = new MongoClient(uri)
+
     beforeAll(async () => {
+        await client.connect()
+
         pdm = new PostDataManager(app)
         bdm = new BlogDataManager(app)
 
         const auth = pdm.prepareAuth()
 
         await pdm.deleteAllDataAndExpectCode(auth)
+        await bdm.deleteAllDataAndExpectCode(auth)
 
         expect.setState({auth})
+    })
+
+    afterAll(async () => {
+        await client.close()
     })
 
     it('- GET posts = []', async () => {
@@ -132,6 +142,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
 
         expect.setState({blog: blog, post: body})
@@ -151,6 +162,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -167,6 +179,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         })
     })
 
@@ -186,6 +199,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -225,6 +239,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -263,6 +278,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -290,6 +306,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post 1",
             title: "post 1",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -317,6 +334,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post updated",
             title: "post updated",
+            createdAt: expect.any(String)
         }])
     })
 
@@ -336,6 +354,7 @@ describe('/posts', () => {
             id: expect.any(String),
             shortDescription: "post updated",
             title: "post updated",
+            createdAt: expect.any(String)
         }])
     })
 

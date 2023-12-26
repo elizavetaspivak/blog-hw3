@@ -2,42 +2,45 @@ import {blogsCollections} from "../db/db";
 import {ObjectId} from "mongodb";
 import {CreateBlogModel} from "../models/blog/input/create.blog.input.models";
 import {UpdateBlogModel} from "../models/blog/input/update.blog.input.models";
+import {blogMapper} from "../models/blog/mappers/blog-mapper";
+import {OutputBlogType} from "../models/blog/output/blog.output.models";
+import {BlogCreateType} from "../models/db/db.models";
 
 export class BlogsRepository {
-    static async getAllBlogs() {
+    static async getAllBlogs(): Promise<OutputBlogType[]> {
         const blogs = await blogsCollections
             .find()
             .toArray();
 
-        return blogs.map((b: any) => ({
-            id: b._id,
-            name: b.name,
-            description: b.description,
-            websiteUrl: b.websiteUrl,
-            createdAt: b.createdAt,
-            isMembership: b.isMembership
-        }))
-
+        return blogs.map(blogMapper)
     }
 
-    static async getBlogById(id: string) {
+    static async getBlogById(id: string): Promise<OutputBlogType | null> {
         const blog = await blogsCollections.findOne({_id: new ObjectId(id)});
 
-        return blog
+        if (!blog){
+            return  null
+        }
+
+        return blogMapper(blog)
     }
 
-    static async createBlog(createdData: CreateBlogModel) {
+    static async createBlog(createdData: BlogCreateType): Promise<string | null> {
         const res = await blogsCollections.insertOne(createdData)
 
-        return res.insertedId
+        if (!res || !res.insertedId){
+            return null
+        }
+
+        return res.insertedId.toString()
     }
 
-    static async updateBlog(updatedData: UpdateBlogModel) {
-        const res = await blogsCollections.updateOne({_id: new ObjectId(updatedData.id)}, {
+    static async updateBlog(id: string, updatedData: UpdateBlogModel): Promise<boolean> {
+        const res = await blogsCollections.updateOne({_id: new ObjectId(id)}, {
                 $set: {
-                    "name": updatedData.name,
-                    "description": updatedData.description,
-                    "websiteUrl": updatedData.websiteUrl
+                    name: updatedData.name,
+                    description: updatedData.description,
+                    websiteUrl: updatedData.websiteUrl
                 }
             }, {upsert: true}
         )
@@ -45,7 +48,7 @@ export class BlogsRepository {
         return !!res.matchedCount;
     }
 
-    static async deleteBlogById(id: string) {
+    static async deleteBlogById(id: string): Promise<boolean> {
         const res = await blogsCollections.deleteOne({_id: new ObjectId(id)})
 
         return !!res.deletedCount

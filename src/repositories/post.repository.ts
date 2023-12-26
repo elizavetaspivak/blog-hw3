@@ -2,51 +2,41 @@ import {postsCollections} from "../db/db";
 import {ObjectId} from "mongodb";
 import {CreatePostModel} from "../models/post/input/create.post.input.models";
 import {UpdatePostModel} from "../models/post/input/update.post.input.models";
+import {OutputPostModel} from "../models/post/output/post.output.models";
+import {postMapper} from "../models/post/mappers/post-mapper";
+import {PostCreateType, PostUpdateType} from "../models/db/db.models";
 
 export class PostsRepository {
-    static async getAllPosts() {
-
+    static async getAllPosts(): Promise<OutputPostModel[]> {
         const posts = await postsCollections
             .find({})
             .toArray();
 
-        return posts.map((p: any) => ({
-            id: p._id,
-            title: p.title,
-            shortDescription: p.shortDescription,
-            content: p.content,
-            blogName: p.blogName,
-            createdAt: p.createdAt,
-            blogId: p.blogId,
-        }))
+        return posts.map(postMapper)
     }
 
-    static async getPostById(id: string) {
+    static async getPostById(id: string): Promise<OutputPostModel | null> {
         const post = await postsCollections.findOne({_id: new ObjectId(id)});
 
         if (!post) {
             return null
         }
 
-        return {
-            id: post._id.toString(),
-            title: post.title,
-            shortDescription: post.shortDescription,
-            content: post.content,
-            blogName: post.blogName,
-            createdAt: post.createdAt,
-            blogId: post.blogId,
-        }
+        return postMapper(post)
     }
 
-    static async createPost(postData: CreatePostModel) {
+    static async createPost(postData: PostCreateType): Promise<string | null> {
         const res = await postsCollections.insertOne(postData)
 
-        return res.insertedId
+        if (!res || !res.insertedId){
+            return null
+        }
+
+        return res.insertedId.toString()
     }
 
-    static async updatePost(postData: UpdatePostModel) {
-        const res = await postsCollections.updateOne({_id: new ObjectId(postData.id)}, {
+    static async updatePost(id: string, postData: PostUpdateType): Promise<boolean> {
+        const res = await postsCollections.updateOne({_id: new ObjectId(id)}, {
                 $set: {
                     title: postData.title,
                     shortDescription: postData.shortDescription,
@@ -59,7 +49,7 @@ export class PostsRepository {
         return !!res.matchedCount;
     }
 
-    static async deletePostById(id: string) {
+    static async deletePostById(id: string): Promise<boolean> {
         const res = await postsCollections.deleteOne({_id: new ObjectId(id)})
 
         return !!res.deletedCount

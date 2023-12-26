@@ -3,6 +3,9 @@ import {BlogDataManager} from "./data-manager/blog.data.manager";
 import {OutputBlogType} from "../../src/models/blog/output/blog.output.models";
 import {CreateBlogModel} from "../../src/models/blog/input/create.blog.input.models";
 import {ErrorType} from "../../src/models/common";
+import {uri} from "../../src/db/db";
+import {MongoClient} from "mongodb";
+
 
 export enum PossibleErrors {
     NAME = 'name',
@@ -14,7 +17,11 @@ describe('/blogs', () => {
 
     let bdm: BlogDataManager
 
+    const client = new MongoClient(uri)
+
     beforeAll(async () => {
+        await client.connect()
+
         bdm = new BlogDataManager(app)
 
         const auth = bdm.prepareAuth()
@@ -22,6 +29,10 @@ describe('/blogs', () => {
         await bdm.deleteAllDataAndExpectCode(auth)
 
         expect.setState({auth})
+    })
+
+    afterAll(async () => {
+        await client.close()
     })
 
     it('- GET blogs = []', async () => {
@@ -83,6 +94,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
 
         expect.setState({blog: blog})
@@ -98,6 +111,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 
@@ -112,6 +127,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         })
     })
 
@@ -127,6 +144,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 
@@ -164,6 +183,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 
@@ -188,6 +209,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog 1",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 
@@ -213,6 +236,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog updated",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 
@@ -230,6 +255,8 @@ describe('/blogs', () => {
             id: expect.any(String),
             name: "blog updated",
             websiteUrl: "https://ru.pngtree.com/",
+            createdAt: expect.any(String),
+            isMembership: false
         }])
     })
 

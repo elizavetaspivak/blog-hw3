@@ -2,7 +2,8 @@ import {Router} from "express";
 import {BlogsRepository} from "../repositories/blog.repository";
 import {authMiddleware} from "../middlewares/auth/auth-middleware";
 import {
-    HTTP_RESPONSE_CODES, ParamType,
+    HTTP_RESPONSE_CODES,
+    ParamType,
     RequestType,
     RequestWithBody,
     RequestWithParams,
@@ -13,6 +14,8 @@ import {OutputBlogType} from "../models/blog/output/blog.output.models";
 import {blogValidation} from "../validators/blog.validator";
 import {CreateBlogModel} from "../models/blog/input/create.blog.input.models";
 import {UpdateBlogModel} from "../models/blog/input/update.blog.input.models";
+import {BlogCreateType} from "../models/db/db.models";
+import {ObjectId} from "mongodb";
 
 export const blogRoute = Router({})
 
@@ -25,10 +28,15 @@ blogRoute.get('/', async (req: RequestType, res: ResponseType<OutputBlogType[]>)
 blogRoute.get('/:id', async (req: RequestWithParams<ParamType>, res: ResponseType<OutputBlogType>) => {
     const id = req.params.id
 
+    if (!ObjectId.isValid(id)){
+        res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
+        return
+    }
+
     const blog = await BlogsRepository.getBlogById(id)
 
     if (!blog) {
-        res.sendStatus(404)
+        res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
         return
     }
 
@@ -36,37 +44,51 @@ blogRoute.get('/:id', async (req: RequestWithParams<ParamType>, res: ResponseTyp
 })
 
 blogRoute.post('/', authMiddleware, blogValidation(), async (req: RequestWithBody<CreateBlogModel>, res: ResponseType<OutputBlogType>) => {
-    const name = req.body.name
-    const description = req.body.description
-    const websiteUrl = req.body.websiteUrl
+    const {name, description, websiteUrl} = req.body
 
-    const newBlog: OutputBlogType = {
-        id: new Date().toISOString(),
+    const newBlog: BlogCreateType = {
         name,
         description,
-        websiteUrl
+        websiteUrl,
+        isMembership: false,
+        createdAt: new Date().toISOString()
     }
 
-    const createdBlog = await BlogsRepository.createBlog(newBlog)
+    const createdBlogId = await BlogsRepository.createBlog(newBlog)
 
-    res.status(HTTP_RESPONSE_CODES.CREATED).send(createdBlog)
+    if (!createdBlogId) {
+        res.sendStatus(HTTP_RESPONSE_CODES.BAD_REQUEST)
+        return
+    }
+
+    const blog = await BlogsRepository.getBlogById(createdBlogId)
+
+    if (!blog) {
+        res.sendStatus(HTTP_RESPONSE_CODES.BAD_REQUEST)
+        return
+    }
+
+    res.status(HTTP_RESPONSE_CODES.CREATED).send(blog)
 })
 
 blogRoute.put('/:id', authMiddleware, blogValidation(), async (req: RequestWithParamsAndBody<ParamType, UpdateBlogModel>, res: ResponseType<void>) => {
     const id = req.params.id
 
-    const name = req.body.name
-    const description = req.body.description
-    const websiteUrl = req.body.websiteUrl
+    if (!ObjectId.isValid(id)){
+        res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
+        return
+    }
 
-    const blog = BlogsRepository.getBlogById(id)
+    const {name, description, websiteUrl} = req.body
+
+    const blog = await BlogsRepository.getBlogById(id)
 
     if (!blog) {
         res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
-        return;
+        return
     }
 
-    const isBlogUpdated = await BlogsRepository.updateBlog({id, name, description, websiteUrl})
+    const isBlogUpdated = await BlogsRepository.updateBlog(id, { name, description, websiteUrl})
 
     if (!isBlogUpdated) {
         res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
@@ -79,14 +101,19 @@ blogRoute.put('/:id', authMiddleware, blogValidation(), async (req: RequestWithP
 blogRoute.delete('/:id', authMiddleware, async (req: RequestWithParams<ParamType>, res: ResponseType<void>) => {
     const id = req.params.id
 
+    if (!ObjectId.isValid(id)){
+        res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
+        return
+    }
+
     const blog = await BlogsRepository.getBlogById(id)
 
     if (!blog) {
-        res.sendStatus(404)
+        res.sendStatus(HTTP_RESPONSE_CODES.NOT_FOUND)
         return;
     }
 
-    BlogsRepository.deleteBlogById(id)
+    await BlogsRepository.deleteBlogById(id)
 
     res.sendStatus(HTTP_RESPONSE_CODES.NO_CONTENT)
 })
