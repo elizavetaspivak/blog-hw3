@@ -1,0 +1,12 @@
+import express from "express";
+import {blogRoute} from "./routes/blog.route";
+import {postRoute} from "./routes/post.route";
+import {TestingRepository} from "./repositories/testing-repository";
+
+export const app = express()
+
+app.use(express.json())
+
+app.use('/testing/all-data', TestingRepository.deleteAllData)
+app.use('/blogs', blogRoute)
+app.use('/posts', postRoute)
